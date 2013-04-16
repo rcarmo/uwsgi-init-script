@@ -13,16 +13,21 @@ set -e
 
 uWSGI=uwsgi
 
-
 PATH=/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 DAEMON=/usr/bin/uwsgi
 RUN=/var/run/uwsgi
-ENABLED_CONFIGS_DIR=/opt/apps/sites-enabled
-AVAILABLE_CONFIGS_DIR=/opt/apps/sites-available
+ENABLED_CONFIGS_DIR=/etc/uwsgi/sites-enabled
+AVAILABLE_CONFIGS_DIR=/etc/uwsgi/sites-available
 OWNER=www-data
 NAME=uwsgi
-DESC=uWSGI Emperor
+DESC="uWSGI Emperor"
 OP=$1
+LOGDIR=/var/log/uwsgi
+
+### virtualenv tweaks ###
+. /servers/api/virtualenv/bin/activate
+DAEMON=/servers/api/virtualenv/bin/uwsgi
+### virtualenv tweaks ###
 
 [[ -x $DAEMON ]] || exit 0
 [[ -d $RUN ]] || mkdir $RUN && chown www-data $RUN
@@ -49,12 +54,12 @@ do_start()
         --emperor $ENABLED_CONFIGS_DIR \
         --pidfile $PIDFILE \
         --die-on-term \
-        --uid www-data \
-        --gid nodoby \
-        --daemon /var/log/uwsgi/uwsgi-emperor.log \
+        --uid $OWNER \
+        --gid $OWNER \
+        --daemonize /var/log/uwsgi/uwsgi-emperor.log \
         "
     if do_pid_check $PIDFILE; then
-        sudo -u $OWNER -i $uWSGI $DAEMON_OPTS $START_OPTS
+        $uWSGI $DAEMON_OPTS $START_OPTS
     else
         echo "Already running!"
     fi
